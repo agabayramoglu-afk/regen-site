@@ -6,6 +6,8 @@
   "compatibility_date": "2025-05-01",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
+  // Site ücretsiz workers.dev adresinden de açılsın.
+  "workers_dev": true,
   // Statik dosyalar dist/client'tan doğrudan sunulur; diğer her yol sunucuya düşer.
   "assets": {
     "directory": "./dist/client",
