@@ -1,0 +1,194 @@
+/* Regen marka katmanı: koyu zemin, turuncudan siyaha tonlama, beyaz yazı. */
+@theme {
+  --color-zemin: #0b0a09;
+  --color-yuzey: #15120f;
+  --color-yuzey2: #1f1a16;
+  --color-yazi: #ffffff;
+  --color-soluk: #bdb2a8;
+  --color-turuncu: #f94b02;
+  --color-turuncu-acik: #ff8a4c;
+  --color-kor: #7a1c03;
+  --color-gece: #050404;
+  --font-display: "Montserrat", "Helvetica Neue", Arial, sans-serif;
+  --font-el: "Kalam", "Comic Neue", cursive;
+}
+
+.regen-govde {
+  margin: 0;
+  min-height: 100dvh;
+  background-color: #0b0a09;
+  background-image:
+    radial-gradient(1200px 600px at 85% -10%, rgba(249, 75, 2, 0.14), transparent 60%),
+    radial-gradient(900px 500px at -10% 40%, rgba(122, 28, 3, 0.18), transparent 60%);
+  background-attachment: fixed;
+  color: #ffffff;
+  font-family: "Montserrat", "Helvetica Neue", Arial, sans-serif;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+  color-scheme: dark;
+}
+
+.regen-govde ::selection {
+  background: #f94b02;
+  color: #ffffff;
+}
+
+.regen-govde :focus-visible {
+  outline: 2px solid #ff8a4c;
+  outline-offset: 3px;
+}
+
+/* Üst menü altındaki turuncudan siyaha geçen ince çizgi. */
+.regen-ust {
+  position: relative;
+  background: rgba(5, 4, 4, 0.82);
+  backdrop-filter: saturate(1.4) blur(14px);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+}
+.regen-ust::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255, 196, 150, 0.9), #f94b02 30%, #7a1c03 65%, rgba(5, 4, 4, 0));
+}
+
+/* Ana eylem: parlayan turuncu hap (referans tonlaması). */
+.regen-parlak {
+  position: relative;
+  color: #ffffff;
+  background: linear-gradient(90deg, #ffb27f 0%, #ff7a2e 22%, #f94b02 48%, #b52a03 78%, #5a1402 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 190, 140, 0.35) inset,
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 10px 30px -8px rgba(249, 75, 2, 0.65);
+  text-shadow: 0 1px 2px rgba(60, 12, 0, 0.45);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.regen-parlak:hover {
+  box-shadow:
+    0 0 0 1px rgba(255, 190, 140, 0.5) inset,
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 14px 40px -6px rgba(249, 75, 2, 0.85);
+}
+.regen-parlak:active {
+  transform: translateY(1px);
+}
+
+/* Cam kart. */
+.regen-cam {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 24px 60px -30px rgba(0, 0, 0, 0.8);
+}
+
+/* Turuncu ışıklı kart (bento içindeki öne çıkan kutu). */
+.regen-kor {
+  background:
+    radial-gradient(120% 90% at 0% 0%, #ffb27f 0%, rgba(255, 140, 70, 0) 45%),
+    linear-gradient(140deg, #ff7a2e 0%, #f94b02 40%, #a42603 75%, #3a0d02 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 200, 160, 0.35) inset,
+    0 30px 80px -30px rgba(249, 75, 2, 0.7);
+}
+
+/* Elle çizilmiş turuncu alt çizgi. */
+.regen-karalama {
+  display: block;
+  width: 190px;
+  height: 16px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 190 16'%3E%3Cdefs%3E%3ClinearGradient id='g'%3E%3Cstop offset='0' stop-color='%23FFB27F'/%3E%3Cstop offset='.5' stop-color='%23F94B02'/%3E%3Cstop offset='1' stop-color='%237A1C03'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M3 10 C 40 4, 80 13, 120 7 S 170 6, 187 9' fill='none' stroke='url(%23g)' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat left center / contain;
+}
+
+/* "Diziliş kur": beyaz dolgu, altta kayan turuncu çizgi. */
+.regen-cta-beyaz {
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+  color: #0b0a09;
+}
+.regen-cta-beyaz::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #ffb27f, #f94b02, #7a1c03);
+  transform: scaleX(0.2);
+  transform-origin: left;
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.regen-cta-beyaz:hover::after,
+.regen-cta-beyaz:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* "Tahtayı aç": vurgu çemberi dilinde kesikli çerçeve. */
+.regen-cta-kesikli {
+  border: 2px dashed #ff8a4c;
+  border-radius: 9999px;
+  color: #ffffff;
+  transition: background-color 0.2s ease;
+}
+.regen-cta-kesikli:hover {
+  background-color: rgba(249, 75, 2, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .regen-cta-beyaz::after,
+  .regen-cta-kesikli,
+  .regen-parlak {
+    transition: none;
+  }
+}
+
+/* Ana sayfa yolculuğu. */
+.regen-yolculuk .scroll-scrub__copy::before {
+  display: none;
+}
+.regen-yolculuk .scroll-scrub__media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(8, 6, 5, 0.92) 0%, rgba(8, 6, 5, 0.7) 32%, rgba(8, 6, 5, 0.15) 62%, rgba(8, 6, 5, 0) 75%),
+    linear-gradient(0deg, rgba(11, 10, 9, 1) 0%, rgba(11, 10, 9, 0) 22%),
+    linear-gradient(180deg, rgba(5, 4, 4, 0.6) 0%, rgba(5, 4, 4, 0) 18%);
+}
+.regen-yolculuk .scroll-scrub__route {
+  top: 84px;
+}
+.regen-yolculuk .scroll-scrub__title {
+  font-family: "Montserrat", "Helvetica Neue", Arial, sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.45);
+}
+.regen-yolculuk .scroll-scrub__body {
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
+}
+.regen-yolculuk .scroll-scrub__kicker {
+  font-family: "Kalam", cursive;
+  font-weight: 700;
+  font-size: 1.4rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.regen-yolculuk .scroll-scrub__tags li {
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(6px);
+}
+@media (max-width: 860px) {
+  .regen-yolculuk .scroll-scrub__media::after {
+    background:
+      linear-gradient(0deg, rgba(8, 6, 5, 0.96) 0%, rgba(8, 6, 5, 0.75) 40%, rgba(8, 6, 5, 0.1) 70%),
+      linear-gradient(180deg, rgba(5, 4, 4, 0.6) 0%, rgba(5, 4, 4, 0) 18%);
+  }
+}

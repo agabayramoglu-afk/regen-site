@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "regen-site",
+  // `npm run build` TanStack Start sunucu paketini dist/server/server.js olarak üretir.
+  "main": "dist/server/server.js",
+  "compatibility_date": "2025-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // Statik dosyalar dist/client'tan doğrudan sunulur; diğer her yol sunucuya düşer.
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS",
+    "not_found_handling": "none"
+  },
+  // Veritabanı: Cloudflare panelinde "regen-db" adlı D1 veritabanını oluşturduktan
+  // sonra kimliğini (Database ID) aşağıya yaz. Tablolar ilk istekte kendiliğinden kurulur.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "regen-db",
+      "database_id": "D1_VERITABANI_KIMLIGI"
+    }
+  ]
+}
