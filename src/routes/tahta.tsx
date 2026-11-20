@@ -37,6 +37,10 @@ function TaktikTahta() {
           baslangic={kayit?.tahta ?? null}
           baslangicBaslik={kayit?.title}
           baslangicId={kayit?.id ?? null}
+          baslangicKlasor={kayit?.klasor}
+          baslangicNotlar={kayit?.notlar}
+          baslangicSabit={kayit?.sabit}
+          baslangicAcik={kayit?.isPublic}
           girisli={!!user}
           kaydet={(d) => tahtaKaydet({ data: d })}
         />

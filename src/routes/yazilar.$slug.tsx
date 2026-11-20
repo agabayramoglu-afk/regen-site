@@ -99,7 +99,13 @@ function YaziSayfasi() {
           </Link>
           <h1 className="text-4xl font-black leading-[1.08] tracking-tight md:text-5xl">{yazi.title}</h1>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t-2 border-white/25 pt-4 text-base">
-            <span className="font-bold">{yazi.author}</span>
+            {yazi.author_handle ? (
+              <Link to="/uye/$handle" params={{ handle: yazi.author_handle }} className="font-bold hover:text-turuncu-acik">
+                {yazi.author}
+              </Link>
+            ) : (
+              <span className="font-bold">{yazi.author}</span>
+            )}
             <span className="text-soluk">{tarihYaz(yazi.published_at ?? yazi.created_at)} · {okumaSuresi(yazi.body)} dk okuma</span>
             <button
               type="button"
@@ -139,7 +145,13 @@ function YaziSayfasi() {
           {yorumlar.map((c) => (
             <li key={c.id} className="rounded-xl bg-yuzey p-5">
               <div className="mb-2 flex items-center gap-3 text-sm">
-                <span className="font-el text-xl font-bold">{c.author}</span>
+                {c.author_handle ? (
+                  <Link to="/uye/$handle" params={{ handle: c.author_handle }} className="font-el text-xl font-bold hover:text-turuncu-acik">
+                    {c.author}
+                  </Link>
+                ) : (
+                  <span className="font-el text-xl font-bold">{c.author}</span>
+                )}
                 <span className="text-soluk">{tarihYaz(c.created_at)}</span>
                 {yonetici || c.user_id === uyeId ? (
                   <button

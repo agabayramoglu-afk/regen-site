@@ -19,15 +19,48 @@ const SEMA: string[] = [
   "INSERT OR IGNORE INTO topics (id, slug, title, description, kind, is_open, sort) VALUES ('kat-taktik', 'taktik', 'Taktik', 'Diziliş, pres, geçiş oyunu, duran toplar.', 'kategori', 1, 1), ('kat-psikoloji', 'psikoloji', 'Psikoloji', 'Baskı, özgüven, karar verme, takım içi dinamikler.', 'kategori', 1, 2), ('kat-oyuncu', 'oyuncu-analizi', 'Oyuncu analizi', 'Bir oyuncunun rolü, alışkanlıkları ve gelişimi.', 'kategori', 1, 3), ('kat-mac', 'mac-analizi', 'Maç analizi', 'Tek bir maçın kırılma anları ve planları.', 'kategori', 1, 4)"
 ];
 
+// Sonradan eklenen sütunlar: her biri ayrı çalışır; sütun zaten varsa hata yok sayılır.
+const EKLER: string[] = [
+  "ALTER TABLE users ADD COLUMN handle TEXT",
+  "ALTER TABLE users ADD COLUMN favori_takim TEXT NOT NULL DEFAULT ''",
+  "ALTER TABLE users ADD COLUMN favori_dizilis TEXT NOT NULL DEFAULT ''",
+  "ALTER TABLE users ADD COLUMN favori_oyuncu TEXT NOT NULL DEFAULT ''",
+  "ALTER TABLE users ADD COLUMN renk TEXT NOT NULL DEFAULT 'turuncu'",
+  "ALTER TABLE users ADD COLUMN forma_no TEXT NOT NULL DEFAULT ''",
+  "ALTER TABLE users ADD COLUMN kapak TEXT NOT NULL DEFAULT 'kor'",
+  "ALTER TABLE users ADD COLUMN konum TEXT NOT NULL DEFAULT ''",
+  "ALTER TABLE users ADD COLUMN instagram TEXT NOT NULL DEFAULT ''",
+  "ALTER TABLE users ADD COLUMN x_hesabi TEXT NOT NULL DEFAULT ''",
+  "ALTER TABLE users ADD COLUMN youtube TEXT NOT NULL DEFAULT ''",
+  "ALTER TABLE boards ADD COLUMN klasor TEXT NOT NULL DEFAULT ''",
+  "ALTER TABLE boards ADD COLUMN notlar TEXT NOT NULL DEFAULT ''",
+  "ALTER TABLE boards ADD COLUMN sabit INTEGER NOT NULL DEFAULT 0",
+];
+
+const SON: string[] = [
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_handle ON users(handle)",
+  "CREATE INDEX IF NOT EXISTS idx_boards_klasor ON boards(user_id, klasor)",
+];
+
+async function kur(db: D1Database) {
+  await db.batch(SEMA.map((s) => db.prepare(s)));
+  for (const s of EKLER) {
+    try {
+      await db.prepare(s).run();
+    } catch (err) {
+      const m = err instanceof Error ? err.message : String(err);
+      if (!/duplicate column/i.test(m)) throw err;
+    }
+  }
+  await db.batch(SON.map((s) => db.prepare(s)));
+}
+
 let hazir: Promise<void> | null = null;
 
 export function semaHazirla(db: D1Database | undefined): Promise<void> {
   if (!db) return Promise.resolve();
   if (!hazir) {
-    hazir = db
-      .batch(SEMA.map((s) => db.prepare(s)))
-      .then(() => undefined)
-      .catch((err) => {
+    hazir = kur(db).catch((err) => {
         hazir = null;
         throw err;
       });

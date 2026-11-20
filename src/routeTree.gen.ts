@@ -19,9 +19,11 @@ import { Route as KonularRouteImport } from './routes/konular'
 import { Route as KayitRouteImport } from './routes/kayit'
 import { Route as GirisRouteImport } from './routes/giris'
 import { Route as DizilisRouteImport } from './routes/dizilis'
+import { Route as AyarlarRouteImport } from './routes/ayarlar'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as YazilarIndexRouteImport } from './routes/yazilar.index'
 import { Route as YazilarSlugRouteImport } from './routes/yazilar.$slug'
+import { Route as UyeHandleRouteImport } from './routes/uye.$handle'
 import { Route as CizimIdRouteImport } from './routes/cizim.$id'
 
 const YonetimRoute = YonetimRouteImport.update({
@@ -74,6 +76,11 @@ const DizilisRoute = DizilisRouteImport.update({
   path: '/dizilis',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AyarlarRoute = AyarlarRouteImport.update({
+  id: '/ayarlar',
+  path: '/ayarlar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -89,6 +96,11 @@ const YazilarSlugRoute = YazilarSlugRouteImport.update({
   path: '/yazilar/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UyeHandleRoute = UyeHandleRouteImport.update({
+  id: '/uye/$handle',
+  path: '/uye/$handle',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CizimIdRoute = CizimIdRouteImport.update({
   id: '/cizim/$id',
   path: '/cizim/$id',
@@ -97,6 +109,7 @@ const CizimIdRoute = CizimIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ayarlar': typeof AyarlarRoute
   '/dizilis': typeof DizilisRoute
   '/giris': typeof GirisRoute
   '/kayit': typeof KayitRoute
@@ -108,11 +121,13 @@ export interface FileRoutesByFullPath {
   '/yaz': typeof YazRoute
   '/yonetim': typeof YonetimRoute
   '/cizim/$id': typeof CizimIdRoute
+  '/uye/$handle': typeof UyeHandleRoute
   '/yazilar/$slug': typeof YazilarSlugRoute
   '/yazilar/': typeof YazilarIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ayarlar': typeof AyarlarRoute
   '/dizilis': typeof DizilisRoute
   '/giris': typeof GirisRoute
   '/kayit': typeof KayitRoute
@@ -124,12 +139,14 @@ export interface FileRoutesByTo {
   '/yaz': typeof YazRoute
   '/yonetim': typeof YonetimRoute
   '/cizim/$id': typeof CizimIdRoute
+  '/uye/$handle': typeof UyeHandleRoute
   '/yazilar/$slug': typeof YazilarSlugRoute
   '/yazilar': typeof YazilarIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ayarlar': typeof AyarlarRoute
   '/dizilis': typeof DizilisRoute
   '/giris': typeof GirisRoute
   '/kayit': typeof KayitRoute
@@ -141,6 +158,7 @@ export interface FileRoutesById {
   '/yaz': typeof YazRoute
   '/yonetim': typeof YonetimRoute
   '/cizim/$id': typeof CizimIdRoute
+  '/uye/$handle': typeof UyeHandleRoute
   '/yazilar/$slug': typeof YazilarSlugRoute
   '/yazilar/': typeof YazilarIndexRoute
 }
@@ -148,6 +166,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/ayarlar'
     | '/dizilis'
     | '/giris'
     | '/kayit'
@@ -159,11 +178,13 @@ export interface FileRouteTypes {
     | '/yaz'
     | '/yonetim'
     | '/cizim/$id'
+    | '/uye/$handle'
     | '/yazilar/$slug'
     | '/yazilar/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/ayarlar'
     | '/dizilis'
     | '/giris'
     | '/kayit'
@@ -175,11 +196,13 @@ export interface FileRouteTypes {
     | '/yaz'
     | '/yonetim'
     | '/cizim/$id'
+    | '/uye/$handle'
     | '/yazilar/$slug'
     | '/yazilar'
   id:
     | '__root__'
     | '/'
+    | '/ayarlar'
     | '/dizilis'
     | '/giris'
     | '/kayit'
@@ -191,12 +214,14 @@ export interface FileRouteTypes {
     | '/yaz'
     | '/yonetim'
     | '/cizim/$id'
+    | '/uye/$handle'
     | '/yazilar/$slug'
     | '/yazilar/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AyarlarRoute: typeof AyarlarRoute
   DizilisRoute: typeof DizilisRoute
   GirisRoute: typeof GirisRoute
   KayitRoute: typeof KayitRoute
@@ -208,6 +233,7 @@ export interface RootRouteChildren {
   YazRoute: typeof YazRoute
   YonetimRoute: typeof YonetimRoute
   CizimIdRoute: typeof CizimIdRoute
+  UyeHandleRoute: typeof UyeHandleRoute
   YazilarSlugRoute: typeof YazilarSlugRoute
   YazilarIndexRoute: typeof YazilarIndexRoute
 }
@@ -284,6 +310,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DizilisRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ayarlar': {
+      id: '/ayarlar'
+      path: '/ayarlar'
+      fullPath: '/ayarlar'
+      preLoaderRoute: typeof AyarlarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -305,6 +338,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof YazilarSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/uye/$handle': {
+      id: '/uye/$handle'
+      path: '/uye/$handle'
+      fullPath: '/uye/$handle'
+      preLoaderRoute: typeof UyeHandleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cizim/$id': {
       id: '/cizim/$id'
       path: '/cizim/$id'
@@ -317,6 +357,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AyarlarRoute: AyarlarRoute,
   DizilisRoute: DizilisRoute,
   GirisRoute: GirisRoute,
   KayitRoute: KayitRoute,
@@ -328,6 +369,7 @@ const rootRouteChildren: RootRouteChildren = {
   YazRoute: YazRoute,
   YonetimRoute: YonetimRoute,
   CizimIdRoute: CizimIdRoute,
+  UyeHandleRoute: UyeHandleRoute,
   YazilarSlugRoute: YazilarSlugRoute,
   YazilarIndexRoute: YazilarIndexRoute,
 }

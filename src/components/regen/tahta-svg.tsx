@@ -133,6 +133,13 @@ function OyuncuPul({ o, secili, onDown }: { o: Oyuncu; secili: boolean; onDown?:
       {secili ? <circle cx={x} cy={y} r={30} fill="none" stroke={RENK.tebesir} strokeWidth={4} strokeDasharray="10 7" /> : null}
       <circle cx={x} cy={y} r={20} fill={dolgu} stroke={o.takim === "rakip" ? RENK.tebesir : RENK.grafit} strokeWidth={3} />
       <text x={x} y={y + 1} textAnchor="middle" dominantBaseline="middle" fontFamily="Montserrat, sans-serif" fontWeight={800} fontSize={17} fill={yazi}>{o.no}</text>
+      {o.not ? (
+        <g>
+          <title>{`${o.ad || o.no}: ${o.not}`}</title>
+          <circle cx={x + 17} cy={y - 17} r={9} fill={RENK.turuncu} stroke={RENK.tebesir} strokeWidth={2.5} />
+          <text x={x + 17} y={y - 16} textAnchor="middle" dominantBaseline="middle" fontFamily="Montserrat, sans-serif" fontWeight={900} fontSize={12} fill="#FFFFFF">i</text>
+        </g>
+      ) : null}
       {o.ad ? (
         <text x={x} y={y + 44} textAnchor="middle" fontFamily="Kalam, cursive" fontWeight={700} fontSize={23} fill={RENK.murekkep} stroke={RENK.tebesir} strokeWidth={5} paintOrder="stroke">{o.ad}</text>
       ) : null}

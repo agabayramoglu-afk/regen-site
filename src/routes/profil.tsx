@@ -1,6 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 
-import { profilVerisi } from "@/lib/regen/api.functions";
+import { profilVerisi, tahtaSil, tahtaVitrin } from "@/lib/regen/api.functions";
+import { FormaAvatar } from "@/components/regen/profil-ogeler";
+import { KLASORSUZ } from "@/lib/regen/profil";
 import { KonuEtiketi, SayfaBasligi } from "@/components/regen/site";
 import { TahtaSvg } from "@/components/regen/tahta-svg";
 import type { Tahta } from "@/lib/regen/board";
@@ -24,6 +26,7 @@ function coz(s: string): Tahta | null {
 
 function Profil() {
   const veri = Route.useLoaderData();
+  const router = useRouter();
   if (!veri) {
     return (
       <main className="mx-auto max-w-3xl px-4 pb-24 pt-14 sm:px-6">
@@ -36,7 +39,20 @@ function Profil() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 pb-24 pt-14 sm:px-6">
-      <SayfaBasligi ust={uye.role === "admin" ? "yönetici" : "üye"} baslik={uye.name} />
+      <div className="flex flex-wrap items-center gap-6">
+        <FormaAvatar renk={uye.renk} no={uye.forma_no} isim={uye.name} boyut={96} className="rounded-full" />
+        <div className="min-w-0 flex-1">
+          <SayfaBasligi ust={uye.role === "admin" ? "yönetici" : "üye"} baslik={uye.name} />
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <Link to="/uye/$handle" params={{ handle: uye.handle }} className="regen-cta-beyaz inline-flex min-h-11 items-center rounded-full px-5 font-extrabold">
+            Profilimi gör
+          </Link>
+          <Link to="/ayarlar" className="regen-cta-kesikli inline-flex min-h-11 items-center px-5 font-extrabold">
+            Profili düzenle
+          </Link>
+        </div>
+      </div>
 
       <section aria-labelledby="yazilarim" className="mt-12">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -78,14 +94,43 @@ function Profil() {
             {tahtalar.map((t) => {
               const tahta = coz(t.data);
               return (
-                <li key={t.id}>
-                  <Link to="/cizim/$id" params={{ id: t.id }} className="group flex flex-col overflow-hidden rounded-2xl bg-yuzey">
+                <li key={t.id} className="regen-cam flex flex-col overflow-hidden rounded-3xl">
+                  <Link to="/cizim/$id" params={{ id: t.id }} className="group flex flex-1 flex-col">
                     {tahta ? <div className="pointer-events-none"><TahtaSvg tahta={tahta} baslik={t.title} /></div> : null}
-                    <span className="flex items-center gap-2 p-4">
-                      <span className="flex-1 font-extrabold group-hover:text-turuncu-acik">{t.title}</span>
-                      <span className="text-sm text-soluk">{t.kind === "dizilis" ? "Diziliş" : "Taktik"}{t.is_public ? "" : " · gizli"}</span>
+                    <span className="flex flex-col gap-1 p-4">
+                      <span className="text-xs font-bold text-turuncu-acik">{t.klasor || KLASORSUZ}</span>
+                      <span className="font-extrabold group-hover:text-turuncu-acik">{t.title}</span>
+                      <span className="text-sm text-soluk">
+                        {t.kind === "dizilis" ? "Diziliş" : "Taktik"}
+                        {t.is_public ? "" : " · gizli"}
+                        {t.sabit ? " · vitrinde" : ""}
+                      </span>
                     </span>
                   </Link>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-white/10 px-4 py-2 text-sm font-bold">
+                    <Link to="/tahta" search={{ duzenle: t.id }} className="text-turuncu-acik hover:underline">Düzenle</Link>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await tahtaVitrin({ data: { id: t.id, sabit: !t.sabit } });
+                        await router.invalidate();
+                      }}
+                      className="min-h-10 text-soluk hover:text-white"
+                    >
+                      {t.sabit ? "Vitrinden çıkar" : "Vitrine koy"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!window.confirm(`"${t.title}" silinsin mi? Bu geri alınamaz.`)) return;
+                        await tahtaSil({ data: { id: t.id } });
+                        await router.invalidate();
+                      }}
+                      className="ml-auto min-h-10 text-soluk hover:text-white"
+                    >
+                      Sil
+                    </button>
+                  </div>
                 </li>
               );
             })}

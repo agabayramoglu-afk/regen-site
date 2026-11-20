@@ -10,6 +10,8 @@ export type Oyuncu = {
   no: string;
   ad: string;
   takim: Takim;
+  /** Oyuncuya iliştirilen kısa taktik not (ör. "içe kat ediyor"). */
+  not?: string;
 };
 
 export type IsaretTur =
@@ -150,7 +152,7 @@ export function dizilisDegistir(t: Tahta, dizilis: string, taraf: "biz" | "rakip
   const eski = t.oyuncular.filter((o) =>
     taraf === "biz" ? o.takim === "biz" || o.takim === "kaleci" : o.takim === "rakip" || o.takim === "rakip_kaleci",
   );
-  const birlesik = yeni.map((o, i) => ({ ...o, ad: eski[i]?.ad ?? "", no: eski[i]?.no || o.no }));
+  const birlesik = yeni.map((o, i) => ({ ...o, ad: eski[i]?.ad ?? "", no: eski[i]?.no || o.no, ...(eski[i]?.not ? { not: eski[i].not } : {}) }));
   const digerleri = t.oyuncular.filter((o) => !eski.includes(o));
   return {
     ...t,
@@ -190,6 +192,7 @@ export function tahtaTemizle(girdi: unknown): Tahta | null {
         no: metin(r.no, 3),
         ad: metin(r.ad, 24),
         takim,
+        ...(metin(r.not, 140) ? { not: metin(r.not, 140) } : {}),
       };
     }),
     top: top ? { x: sayi(top.x, 0, SAHA_EN), y: sayi(top.y, 0, SAHA_BOY) } : null,

@@ -7,6 +7,7 @@ import type { Tahta } from "@/lib/regen/board";
 import { govdeAyristir, tarihYaz } from "@/lib/regen/metin";
 import type { Uye } from "@/lib/regen/auth.server";
 import { TahtaSvg } from "./tahta-svg";
+import { FormaAvatar } from "./profil-ogeler";
 
 const NAV = [
   { to: "/yazilar", ad: "Yazılar" },
@@ -47,7 +48,10 @@ export function UstMenu({ uye }: { uye: Uye | null }) {
               {uye.role === "admin" ? (
                 <Link to="/yonetim" className={navLink}>Yönetim</Link>
               ) : null}
-              <Link to="/profil" className={navLink}>{uye.name.split(" ")[0]}</Link>
+              <Link to="/profil" className={`${navLink} flex items-center gap-2`}>
+                <FormaAvatar renk={uye.renk} no={uye.forma_no} isim={uye.name} boyut={32} />
+                {uye.name.split(" ")[0]}
+              </Link>
               <button type="button" onClick={cikis} className="min-h-11 text-white/55 hover:text-white">Çıkış</button>
               <Link to="/yaz" search={{}} className="regen-parlak rounded-full px-5 py-2.5 font-extrabold">
                 Yazı yaz

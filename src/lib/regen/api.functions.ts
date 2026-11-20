@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import {
   aktifUye,
+  handleAta,
   db,
   oturumAc,
   oturumKapat,
@@ -15,6 +16,7 @@ import {
 } from "./auth.server";
 import { tahtaTemizle, type Tahta } from "./board";
 import { ozetCikar, slugYap } from "./metin";
+import { FORMA_RENKLERI, HANDLE_KURALI, KAPAKLAR, SOSYAL_KURALI } from "./profil";
 
 export type Konu = {
   id: string;
@@ -39,16 +41,17 @@ export type YaziKart = {
   topic_slug: string;
   topic_kind: string;
   author: string;
+  author_handle: string | null;
   begeni: number;
   yorum: number;
   board_data: string | null;
 };
 
-export type Yorum = { id: string; body: string; created_at: string; author: string; user_id: string };
+export type Yorum = { id: string; body: string; created_at: string; author: string; author_handle: string | null; user_id: string };
 
 const KART_SQL = `
   SELECT p.id, p.slug, p.title, p.excerpt, p.status, p.featured, p.published_at, p.created_at,
-         t.title AS topic_title, t.slug AS topic_slug, t.kind AS topic_kind, u.name AS author,
+         t.title AS topic_title, t.slug AS topic_slug, t.kind AS topic_kind, u.name AS author, u.handle AS author_handle,
          (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS begeni,
          (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS yorum,
          b.data AS board_data
@@ -99,6 +102,7 @@ export const kayitOl = createServerFn({ method: "POST" })
       .prepare("INSERT INTO users (id, email, name, password_hash, salt, role) VALUES (?, ?, ?, ?, ?, ?)")
       .bind(id, data.email, data.name, ozet, tuz, role)
       .run();
+    await handleAta(id, data.name);
     await oturumAc(id);
     return { ok: true, role };
   });
@@ -161,7 +165,7 @@ export const yaziGetir = createServerFn({ method: "GET" })
     if (yazi.status !== "yayinda" && !benim && !yonetici) return null;
     const yorumlar = await db()
       .prepare(
-        `SELECT c.id, c.body, c.created_at, c.user_id, u.name AS author FROM comments c
+        `SELECT c.id, c.body, c.created_at, c.user_id, u.name AS author, u.handle AS author_handle FROM comments c
          JOIN users u ON u.id = c.user_id WHERE c.post_id = ? ORDER BY c.created_at ASC LIMIT 200`,
       )
       .bind(yazi.id)
@@ -263,10 +267,16 @@ export const tahtaKaydet = createServerFn({ method: "POST" })
       title: z.string().trim().min(2, "Çizime kısa bir isim ver.").max(80),
       data: z.unknown(),
       isPublic: z.boolean(),
+      klasor: z.string().trim().max(40).optional(),
+      notlar: z.string().trim().max(2000).optional(),
+      sabit: z.boolean().optional(),
     }),
   )
   .handler(async ({ data }) => {
     const uye = await uyeGerekli();
+    const klasor = data.klasor ?? "";
+    const notlar = data.notlar ?? "";
+    const sabit = data.sabit ? 1 : 0;
     const tahta = tahtaTemizle(data.data);
     if (!tahta) throw new Error("Çizim okunamadı.");
     const json = JSON.stringify(tahta);
@@ -276,16 +286,18 @@ export const tahtaKaydet = createServerFn({ method: "POST" })
       const var_ = await d.prepare("SELECT user_id FROM boards WHERE id = ?").bind(data.id).first<{ user_id: string }>();
       if (var_ && var_.user_id === uye.id) {
         await d
-          .prepare("UPDATE boards SET title = ?, data = ?, kind = ?, is_public = ?, updated_at = datetime('now') WHERE id = ?")
-          .bind(data.title, json, tahta.tur, data.isPublic ? 1 : 0, data.id)
+          .prepare(
+            "UPDATE boards SET title = ?, data = ?, kind = ?, is_public = ?, klasor = ?, notlar = ?, sabit = ?, updated_at = datetime('now') WHERE id = ?",
+          )
+          .bind(data.title, json, tahta.tur, data.isPublic ? 1 : 0, klasor, notlar, sabit, data.id)
           .run();
         return { id: data.id };
       }
     }
     const id = rastgeleHex(10);
     await d
-      .prepare("INSERT INTO boards (id, user_id, kind, title, data, is_public) VALUES (?, ?, ?, ?, ?, ?)")
-      .bind(id, uye.id, tahta.tur, data.title, json, data.isPublic ? 1 : 0)
+      .prepare("INSERT INTO boards (id, user_id, kind, title, data, is_public, klasor, notlar, sabit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+      .bind(id, uye.id, tahta.tur, data.title, json, data.isPublic ? 1 : 0, klasor, notlar, sabit)
       .run();
     return { id };
   });
@@ -296,11 +308,15 @@ export const tahtaGetir = createServerFn({ method: "GET" })
     const uye = await aktifUye();
     const r = await db()
       .prepare(
-        `SELECT b.id, b.title, b.kind, b.data, b.is_public, b.user_id, b.updated_at, u.name AS author
+        `SELECT b.id, b.title, b.kind, b.data, b.is_public, b.user_id, b.updated_at, b.klasor, b.notlar, b.sabit,
+                u.name AS author, u.handle AS author_handle
          FROM boards b JOIN users u ON u.id = b.user_id WHERE b.id = ?`,
       )
       .bind(data.id)
-      .first<{ id: string; title: string; kind: string; data: string; is_public: number; user_id: string; updated_at: string; author: string }>();
+      .first<{
+        id: string; title: string; kind: string; data: string; is_public: number; user_id: string; updated_at: string;
+        klasor: string; notlar: string; sabit: number; author: string; author_handle: string | null;
+      }>();
     if (!r) return null;
     const benim = uye?.id === r.user_id;
     if (r.is_public !== 1 && !benim) return null;
@@ -311,7 +327,19 @@ export const tahtaGetir = createServerFn({ method: "GET" })
       tahta = null;
     }
     if (!tahta) return null;
-    return { id: r.id, title: r.title, author: r.author, updated_at: r.updated_at, isPublic: r.is_public === 1, benim, tahta };
+    return {
+      id: r.id,
+      title: r.title,
+      author: r.author,
+      authorHandle: r.author_handle,
+      updated_at: r.updated_at,
+      isPublic: r.is_public === 1,
+      klasor: r.klasor,
+      notlar: r.notlar,
+      sabit: r.sabit === 1,
+      benim,
+      tahta,
+    };
   });
 
 export const profilVerisi = createServerFn({ method: "GET" }).handler(async () => {
@@ -322,11 +350,144 @@ export const profilVerisi = createServerFn({ method: "GET" }).handler(async () =
     .bind(uye.id)
     .all<YaziKart>();
   const tahtalar = await db()
-    .prepare("SELECT id, title, kind, is_public, updated_at, data FROM boards WHERE user_id = ? ORDER BY updated_at DESC LIMIT 100")
+    .prepare("SELECT id, title, kind, is_public, updated_at, data, klasor, notlar, sabit FROM boards WHERE user_id = ? ORDER BY updated_at DESC LIMIT 200")
     .bind(uye.id)
-    .all<{ id: string; title: string; kind: string; is_public: number; updated_at: string; data: string }>();
+    .all<TahtaOzet>();
   return { uye, yazilar: yazilar.results, tahtalar: tahtalar.results };
 });
+
+/* ---------- Profil ---------- */
+
+export type TahtaOzet = {
+  id: string;
+  title: string;
+  kind: string;
+  is_public: number;
+  updated_at: string;
+  data: string;
+  klasor: string;
+  notlar: string;
+  sabit: number;
+};
+
+export type ProfilBilgisi = {
+  id: string;
+  name: string;
+  handle: string;
+  role: string;
+  bio: string;
+  favori_takim: string;
+  favori_dizilis: string;
+  favori_oyuncu: string;
+  renk: string;
+  forma_no: string;
+  kapak: string;
+  konum: string;
+  instagram: string;
+  x_hesabi: string;
+  youtube: string;
+  created_at: string;
+};
+
+const PROFIL_ALANLARI =
+  "id, name, handle, role, bio, favori_takim, favori_dizilis, favori_oyuncu, renk, forma_no, kapak, konum, instagram, x_hesabi, youtube, created_at";
+
+export const profilGetir = createServerFn({ method: "GET" })
+  .validator(z.object({ handle: z.string().max(40) }))
+  .handler(async ({ data }) => {
+    const uye = await aktifUye();
+    const p = await db()
+      .prepare(`SELECT ${PROFIL_ALANLARI} FROM users WHERE handle = ?`)
+      .bind(data.handle.toLowerCase())
+      .first<ProfilBilgisi>();
+    if (!p) return null;
+    const benim = uye?.id === p.id;
+    const yazilar = await db()
+      .prepare(`${KART_SQL} WHERE p.user_id = ? AND p.status = 'yayinda' ORDER BY p.published_at DESC LIMIT 60`)
+      .bind(p.id)
+      .all<YaziKart>();
+    const tahtalar = await db()
+      .prepare(
+        `SELECT id, title, kind, is_public, updated_at, data, klasor, notlar, sabit FROM boards
+         WHERE user_id = ? ${benim ? "" : "AND is_public = 1"} ORDER BY sabit DESC, updated_at DESC LIMIT 200`,
+      )
+      .bind(p.id)
+      .all<TahtaOzet>();
+    const begeni = await db()
+      .prepare("SELECT COUNT(*) AS n FROM likes l JOIN posts p ON p.id = l.post_id WHERE p.user_id = ? AND p.status = 'yayinda'")
+      .bind(p.id)
+      .first<{ n: number }>();
+    return { profil: p, benim, yazilar: yazilar.results, tahtalar: tahtalar.results, begeniToplam: begeni?.n ?? 0 };
+  });
+
+export const profilAyarlari = createServerFn({ method: "GET" }).handler(async () => {
+  const uye = await aktifUye();
+  if (!uye) return null;
+  return await db().prepare(`SELECT ${PROFIL_ALANLARI} FROM users WHERE id = ?`).bind(uye.id).first<ProfilBilgisi>();
+});
+
+const sosyal = z
+  .string()
+  .trim()
+  .transform((v) => v.replace(/^https?:\/\/[^/]+\//, "").replace(/^@/, "").replace(/[/?#].*$/, ""))
+  .refine((v) => SOSYAL_KURALI.test(v), "Sosyal medya kullanıcı adında yalnızca harf, rakam, nokta, tire ve alt çizgi olabilir.");
+
+export const profilKaydet = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      name: z.string().trim().min(2, "İsim en az 2 harf olmalı.").max(40),
+      handle: z
+        .string()
+        .trim()
+        .toLowerCase()
+        .refine((v) => HANDLE_KURALI.test(v), "Kullanıcı adı 3-24 karakter olmalı; yalnızca küçük harf, rakam ve alt çizgi."),
+      bio: z.string().trim().max(400),
+      favori_takim: z.string().trim().max(40),
+      favori_dizilis: z.string().trim().max(12),
+      favori_oyuncu: z.string().trim().max(40),
+      renk: z.string().refine((v) => FORMA_RENKLERI.some((r) => r.id === v)),
+      forma_no: z.string().trim().regex(/^\d{0,2}$/, "Forma numarası en fazla 2 haneli olmalı."),
+      kapak: z.string().refine((v) => KAPAKLAR.some((k) => k.id === v)),
+      konum: z.string().trim().max(40),
+      instagram: sosyal,
+      x_hesabi: sosyal,
+      youtube: sosyal,
+    }),
+  )
+  .handler(async ({ data }) => {
+    const uye = await uyeGerekli();
+    const d = db();
+    const sahip = await d.prepare("SELECT id FROM users WHERE handle = ?").bind(data.handle).first<{ id: string }>();
+    if (sahip && sahip.id !== uye.id) throw new Error("Bu kullanıcı adı alınmış, başka bir tane dene.");
+    await d
+      .prepare(
+        `UPDATE users SET name = ?, handle = ?, bio = ?, favori_takim = ?, favori_dizilis = ?, favori_oyuncu = ?,
+         renk = ?, forma_no = ?, kapak = ?, konum = ?, instagram = ?, x_hesabi = ?, youtube = ? WHERE id = ?`,
+      )
+      .bind(
+        data.name, data.handle, data.bio, data.favori_takim, data.favori_dizilis, data.favori_oyuncu,
+        data.renk, data.forma_no, data.kapak, data.konum, data.instagram, data.x_hesabi, data.youtube, uye.id,
+      )
+      .run();
+    return { handle: data.handle };
+  });
+
+export const tahtaVitrin = createServerFn({ method: "POST" })
+  .validator(z.object({ id: z.string().max(40), sabit: z.boolean() }))
+  .handler(async ({ data }) => {
+    const uye = await uyeGerekli();
+    await db().prepare("UPDATE boards SET sabit = ? WHERE id = ? AND user_id = ?").bind(data.sabit ? 1 : 0, data.id, uye.id).run();
+    return { ok: true };
+  });
+
+export const tahtaSil = createServerFn({ method: "POST" })
+  .validator(z.object({ id: z.string().max(40) }))
+  .handler(async ({ data }) => {
+    const uye = await uyeGerekli();
+    await db().prepare("UPDATE posts SET board_id = NULL WHERE board_id = ? AND user_id = ?").bind(data.id, uye.id).run();
+    await db().prepare("DELETE FROM boards WHERE id = ? AND user_id = ?").bind(data.id, uye.id).run();
+    return { ok: true };
+  });
 
 /* ---------- Yönetim ---------- */
 

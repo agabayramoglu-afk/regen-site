@@ -16,6 +16,7 @@ import {
   type TahtaTur,
 } from "@/lib/regen/board";
 import { RENK, TahtaSvg } from "./tahta-svg";
+import { HAZIR_KLASORLER } from "@/lib/regen/profil";
 
 type Arac = "sec" | IsaretTur | "sil";
 
@@ -74,6 +75,10 @@ export function TahtaEditor({
   baslangic,
   baslangicBaslik,
   baslangicId,
+  baslangicKlasor,
+  baslangicNotlar,
+  baslangicSabit,
+  baslangicAcik,
   girisli,
   kaydet,
 }: {
@@ -81,8 +86,20 @@ export function TahtaEditor({
   baslangic?: Tahta | null;
   baslangicBaslik?: string;
   baslangicId?: string | null;
+  baslangicKlasor?: string;
+  baslangicNotlar?: string;
+  baslangicSabit?: boolean;
+  baslangicAcik?: boolean;
   girisli: boolean;
-  kaydet: (girdi: { id: string | null; title: string; data: Tahta; isPublic: boolean }) => Promise<KaydetSonuc>;
+  kaydet: (girdi: {
+    id: string | null;
+    title: string;
+    data: Tahta;
+    isPublic: boolean;
+    klasor: string;
+    notlar: string;
+    sabit: boolean;
+  }) => Promise<KaydetSonuc>;
 }) {
   const taslakAnahtari = `regen-tahta-${tur}`;
   const [tahta, setTahta] = useState<Tahta>(() => baslangic ?? bosTahta(tur));
@@ -92,7 +109,10 @@ export function TahtaEditor({
   const [taslak, setTaslak] = useState<Isaret | null>(null);
   const [etiketMetni, setEtiketMetni] = useState("Arada boş");
   const [baslik, setBaslik] = useState(baslangicBaslik ?? "");
-  const [herkeseAcik, setHerkeseAcik] = useState(true);
+  const [herkeseAcik, setHerkeseAcik] = useState(baslangicAcik ?? true);
+  const [klasor, setKlasor] = useState(baslangicKlasor ?? (tur === "dizilis" ? HAZIR_KLASORLER[0] : ""));
+  const [notlar, setNotlar] = useState(baslangicNotlar ?? "");
+  const [sabit, setSabit] = useState(baslangicSabit ?? false);
   const [kayitId, setKayitId] = useState<string | null>(baslangicId ?? null);
   const [durum, setDurum] = useState<{ tur: "ok" | "hata"; metin: string } | null>(null);
   const [kaydediliyor, setKaydediliyor] = useState(false);
@@ -282,11 +302,12 @@ export function TahtaEditor({
 
   const seciliOyuncu = tahta.oyuncular.find((o) => o.id === secili) ?? null;
 
-  const oyuncuGuncelle = (alan: "no" | "ad", deger: string) => {
+  const oyuncuGuncelle = (alan: "no" | "ad" | "not", deger: string) => {
     if (!secili) return;
+    const sinir = alan === "no" ? 3 : alan === "ad" ? 24 : 140;
     setTahta((t) => ({
       ...t,
-      oyuncular: t.oyuncular.map((o) => (o.id === secili ? { ...o, [alan]: deger.slice(0, alan === "no" ? 3 : 24) } : o)),
+      oyuncular: t.oyuncular.map((o) => (o.id === secili ? { ...o, [alan]: deger.slice(0, sinir) } : o)),
     }));
   };
 
@@ -331,7 +352,15 @@ export function TahtaEditor({
     }
     setKaydediliyor(true);
     try {
-      const r = await kaydet({ id: kayitId, title: baslik.trim(), data: tahta, isPublic: herkeseAcik });
+      const r = await kaydet({
+        id: kayitId,
+        title: baslik.trim(),
+        data: tahta,
+        isPublic: herkeseAcik,
+        klasor: klasor.trim(),
+        notlar: notlar.trim(),
+        sabit,
+      });
       setKayitId(r.id);
       setDurum({ tur: "ok", metin: "Kaydedildi." });
     } catch (err) {
@@ -472,6 +501,19 @@ export function TahtaEditor({
                   <input id="oyuncu-ad" value={seciliOyuncu.ad} placeholder="Örn. Kaptan" onChange={(e) => oyuncuGuncelle("ad", e.target.value)} className="h-11 rounded-lg border border-white/15 bg-yuzey2 text-yazi px-3 font-semibold" />
                 </div>
               </div>
+              <div className="flex flex-col gap-1">
+                <label htmlFor="oyuncu-not" className="text-sm font-bold">Oyuncu notu</label>
+                <textarea
+                  id="oyuncu-not"
+                  value={seciliOyuncu.not ?? ""}
+                  maxLength={140}
+                  rows={2}
+                  placeholder="Örn. Topu alınca içe kat ediyor, bek bindiriyor."
+                  onChange={(e) => oyuncuGuncelle("not", e.target.value)}
+                  className="rounded-lg border border-white/15 bg-yuzey2 p-3 text-sm text-yazi"
+                />
+                <p className="text-xs text-soluk">Notu olan oyuncunun üstünde turuncu bir "i" görünür.</p>
+              </div>
             </div>
           ) : (
             <p className="text-sm leading-relaxed text-soluk">Taşı aracı seçiliyken bir oyuncuya dokun; numarasını ve ismini buradan yaz.</p>
@@ -486,9 +528,42 @@ export function TahtaEditor({
                 <label htmlFor="tahta-baslik" className="text-sm font-bold">Çizimin adı</label>
                 <input id="tahta-baslik" value={baslik} maxLength={80} placeholder="Örn. Sol kanatta üçgen" onChange={(e) => setBaslik(e.target.value)} className="h-11 rounded-lg border border-white/15 bg-yuzey2 text-yazi px-3 font-semibold" />
               </div>
+              <div className="flex flex-col gap-1">
+                <label htmlFor="tahta-klasor" className="text-sm font-bold">Taktik odasındaki klasör</label>
+                <input
+                  id="tahta-klasor"
+                  list="tahta-klasorler"
+                  value={klasor}
+                  maxLength={40}
+                  placeholder="Seç ya da yeni klasör adı yaz"
+                  onChange={(e) => setKlasor(e.target.value)}
+                  className="h-11 rounded-lg border border-white/15 bg-yuzey2 px-3 font-semibold text-yazi"
+                />
+                <datalist id="tahta-klasorler">
+                  {HAZIR_KLASORLER.map((k) => (
+                    <option key={k} value={k} />
+                  ))}
+                </datalist>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label htmlFor="tahta-notlar" className="text-sm font-bold">Notlar</label>
+                <textarea
+                  id="tahta-notlar"
+                  value={notlar}
+                  maxLength={2000}
+                  rows={3}
+                  placeholder="Bu planın amacı, ne zaman kullanılır, dikkat edilecekler..."
+                  onChange={(e) => setNotlar(e.target.value)}
+                  className="rounded-lg border border-white/15 bg-yuzey2 p-3 text-sm text-yazi"
+                />
+              </div>
               <label className="flex min-h-11 items-center gap-2 text-sm font-semibold">
                 <input type="checkbox" checked={herkeseAcik} onChange={(e) => setHerkeseAcik(e.target.checked)} className="size-5 accent-turuncu" />
-                Bağlantısı olan herkes görebilsin
+                Profilimde ve bağlantıyla herkes görebilsin
+              </label>
+              <label className="flex min-h-11 items-center gap-2 text-sm font-semibold">
+                <input type="checkbox" checked={sabit} onChange={(e) => setSabit(e.target.checked)} className="size-5 accent-turuncu" />
+                Profilimin vitrinine koy
               </label>
               <button
                 type="button"

@@ -3,8 +3,9 @@ import { deleteCookie, getCookie, setCookie } from "@tanstack/react-start/server
 import type { D1Database } from "@cloudflare/workers-types";
 
 import { bindings } from "../bindings.server";
+import { handleOner } from "./profil";
 
-export type Uye = { id: string; name: string; email: string; role: "uye" | "admin" };
+export type Uye = { id: string; name: string; email: string; role: "uye" | "admin"; handle: string; renk: string; forma_no: string };
 
 const CEREZ = "regen_oturum";
 const GUN = 24 * 60 * 60;
@@ -78,12 +79,30 @@ export async function aktifUye(): Promise<Uye | null> {
   const { DB } = bindings();
   if (!DB) return null;
   const row = await DB.prepare(
-    `SELECT u.id, u.name, u.email, u.role FROM sessions s JOIN users u ON u.id = s.user_id
+    `SELECT u.id, u.name, u.email, u.role, u.handle, u.renk, u.forma_no FROM sessions s JOIN users u ON u.id = s.user_id
      WHERE s.id = ? AND s.expires_at > datetime('now')`,
   )
     .bind(await sha256(token))
-    .first<Uye>();
-  return row ?? null;
+    .first<Omit<Uye, "handle"> & { handle: string | null }>();
+  if (!row) return null;
+  const handle = row.handle ?? (await handleAta(row.id, row.name));
+  return { ...row, handle };
+}
+
+// Kullanıcıya benzersiz bir kullanıcı adı verir (eski hesaplar ve yeni kayıtlar için).
+export async function handleAta(userId: string, isim: string): Promise<string> {
+  const d = db();
+  const taban = handleOner(isim);
+  for (let i = 0; i < 6; i++) {
+    const aday = i === 0 ? taban : `${taban.slice(0, 18)}_${rastgeleHex(2)}`;
+    const var_ = await d.prepare("SELECT id FROM users WHERE handle = ?").bind(aday).first<{ id: string }>();
+    if (var_ && var_.id !== userId) continue;
+    await d.prepare("UPDATE users SET handle = ? WHERE id = ?").bind(aday, userId).run();
+    return aday;
+  }
+  const son = `uye_${rastgeleHex(5)}`;
+  await d.prepare("UPDATE users SET handle = ? WHERE id = ?").bind(son, userId).run();
+  return son;
 }
 
 export async function uyeGerekli(): Promise<Uye> {
